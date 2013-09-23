@@ -1,18 +1,20 @@
 package com.lunatech.squeryltools
 
 import java.sql.Connection
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import java.util.concurrent.{CountDownLatch, TimeUnit}
+
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-import org.specs2.mutable.{ After, Specification }
+
+import org.specs2.mutable.{After, Specification}
 import org.specs2.specification.Scope
-import org.squeryl.{ Schema, Session, SessionFactory }
-import org.squeryl.PrimitiveTypeMode.{ __thisDsl, binaryOpConv12, inTransaction, int2ScalarInt, setAll, update, view2QueryAll }
+import org.squeryl.{Schema, Session, SessionFactory}
+import org.squeryl.PrimitiveTypeMode.{__thisDsl, binaryOpConv12, inTransaction, int2ScalarInt, setAll, update, view2QueryAll}
 import org.squeryl.adapters.PostgreSqlAdapter
-import com.lunatech.squeryltools.Transactions.{ RetryableException, deferToCommit, retryableTransaction }
-import scala.collection.JavaConverters._
+
+import com.lunatech.squeryltools.Transactions.{RetryableException, deferToCommit, retryableTransaction}
 
 class TransactionsSpec extends Specification {
   "TransactionsSpec".title
@@ -242,6 +244,19 @@ class TransactionsSpec extends Specification {
   "Calling `deferToCommit` outside a `retryableTransaction` block" should {
     inExample("throw an IllegalStateException") in {
       deferToCommit() must throwA[IllegalStateException]
+    }
+  }
+
+  "Deferred actions" should {
+    inExample("be executed in the order they are added") in {
+      var a = 0
+      retryableTransaction {
+        deferToCommit(a = a + 1)
+        deferToCommit(a = a * 2)
+      }
+
+      // This would be '1' if the deferred actions are executed in the wrong order.
+      a must_== 2
     }
   }
 
