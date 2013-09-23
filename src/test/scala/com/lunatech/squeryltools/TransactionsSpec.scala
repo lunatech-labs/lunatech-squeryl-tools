@@ -1,20 +1,18 @@
 package com.lunatech.squeryltools
 
 import java.sql.Connection
-import java.util.concurrent.{CountDownLatch, TimeUnit}
-
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-
-import org.specs2.mutable.{After, Specification}
+import org.specs2.mutable.{ After, Specification }
 import org.specs2.specification.Scope
-import org.squeryl.{Schema, Session, SessionFactory}
-import org.squeryl.PrimitiveTypeMode.{__thisDsl, binaryOpConv12, inTransaction, int2ScalarInt, setAll, update, view2QueryAll}
+import org.squeryl.{ Schema, Session, SessionFactory }
+import org.squeryl.PrimitiveTypeMode.{ __thisDsl, binaryOpConv12, inTransaction, int2ScalarInt, setAll, update, view2QueryAll }
 import org.squeryl.adapters.PostgreSqlAdapter
-
-import com.lunatech.squeryltools.Transactions.{RetryableException, deferToCommit, retryableTransaction}
+import com.lunatech.squeryltools.Transactions.{ RetryableException, deferToCommit, retryableTransaction }
+import scala.collection.JavaConverters._
 
 class TransactionsSpec extends Specification {
   "TransactionsSpec".title
@@ -38,7 +36,6 @@ class TransactionsSpec extends Specification {
 
   "2 interlocking transactions" should {
 
-    // TODO, make a matcher that can inspect cause exceptions to find the real postgres exception
     "cause one to throw an exception containing 'sqlState: 40001' in the message and abort" in new SampleDataScope {
 
       // We use a latch to synchronize the transactions and to make sure they can't be serialized
@@ -61,7 +58,6 @@ class TransactionsSpec extends Specification {
 
   "2 interlocking transactions in a `retryableTransaction` block" should {
 
-    // TODO, try to confirm that it actually did something, maybe by checking the logging output somehow?
     inExample("complete successfully") in new SampleDataScope {
 
       val latch = new CountDownLatch(2)
@@ -80,7 +76,6 @@ class TransactionsSpec extends Specification {
 
   "A slow transaction in a `retryableTransaction` block that keeps failing because of fast other transactions" should {
 
-    // TODO, try to confirm that it actually did something, maybe by checking the logging output somehow?
     inExample("eventually give up and throw the exception") in new SampleDataScope {
 
       // This is our slow transaction

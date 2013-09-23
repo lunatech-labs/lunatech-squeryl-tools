@@ -73,16 +73,29 @@ object Transactions {
 
   /**
    * Extractor of retryable exceptions.
+   *
+   * Postgresql throws `PSQLException`, that have a `getSQLState` method,
+   * which contains an error code as found on http://www.postgresql.org/docs/9.1/static/errcodes-appendix.html
+   *
+   * This object matches on the error codes that we know indicate that the
+   * transaction might succeed on retry.
    */
   object RetryableException {
-    val deadlockStates = Seq("40P01", "40001")
+    /**
+     * SQL states that indicate that the transaction might succeed if retried.
+     * See http://www.postgresql.org/docs/9.1/static/errcodes-appendix.html
+     *
+     * 40P01 = deadlock detected
+     * 40001 = serialization failure
+     */
+    val retryableSqlStates = Seq("40P01", "40001")
 
     /**
      * Returns true if the provided `Throwable` is caused by a Postgres deadlock exception.
      */
     def apply(t: Throwable): Boolean = t match {
       case e: RuntimeException => t.getCause match {
-        case p: PSQLException if deadlockStates contains p.getSQLState => true
+        case p: PSQLException if retryableSqlStates contains p.getSQLState => true
         case _ => false
       }
       case _ => false
