@@ -2,7 +2,7 @@ name := "squeryl-tools"
 
 scalaVersion := "2.10.2"
 
-version := "1.0-SNAPSHOT"
+version := "1.0"
 
 organization :="com.lunatech"
 
