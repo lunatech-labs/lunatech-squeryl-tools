@@ -1,7 +1,8 @@
 package com.lunatech.squeryltools
 
-import scala.util.control.NonFatal
+import com.mysql.jdbc.exceptions.jdbc4.MySQLTransactionRollbackException
 
+import scala.util.control.NonFatal
 import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
 import org.squeryl.PrimitiveTypeMode.inTransaction
@@ -88,14 +89,21 @@ object Transactions {
      * 40P01 = deadlock detected
      * 40001 = serialization failure
      */
-    val retryableSqlStates = Seq("40P01", "40001")
+    val retryableSqlStatesPG = Seq("40P01", "40001")
+    /**
+     * Mysql deadlock SQL state (just like PG, indicates retry might succeed).
+     *  See: https://dev.mysql.com/doc/refman/5.7/en/error-messages-server.html#error_er_lock_deadlock
+     * 40001 = ER_LOCK_DEADLOCK
+     */
+    val retryableSqlStatesMySQL = Seq("40001")
 
     /**
      * Returns true if the provided `Throwable` is caused by a Postgres deadlock exception.
      */
     def apply(t: Throwable): Boolean = t match {
       case e: RuntimeException => t.getCause match {
-        case p: PSQLException if retryableSqlStates contains p.getSQLState => true
+        case p: PSQLException if retryableSqlStatesPG contains p.getSQLState => true
+        case m: MySQLTransactionRollbackException if retryableSqlStatesMySQL contains m.getSQLState => true
         case _ => false
       }
       case _ => false
